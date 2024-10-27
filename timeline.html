@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction of Attack Severity over Time</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        /* Style for the tooltip */
+        .tooltip {
+            position: absolute;
+            text-align: center;
+            width: 120px;
+            padding: 5px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Prediction of Attack Severity over Time</h1>
+    <div id="chart"></div>
+
+    <script>
+        // Sample time series data for attack types
+        const data = [
+            { time: new Date(2024, 8, 12, 14, 0, 0), attack: 'Fuzzers', severity: 5 },
+            { time: new Date(2024, 8, 12, 14, 0, 45), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 1, 30), attack: 'Analysis', severity: 4 },
+            { time: new Date(2024, 8, 12, 14, 2, 15), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 3, 10), attack: 'Backdoors', severity: 8 },
+            { time: new Date(2024, 8, 12, 14, 4, 5), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 4, 50), attack: 'DoS', severity: 7 },
+            { time: new Date(2024, 8, 12, 14, 6, 25), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 7, 10), attack: 'Exploits', severity: 6 },
+            { time: new Date(2024, 8, 12, 14, 7, 55), attack: 'Shellcode', severity: 9 },
+            { time: new Date(2024, 8, 12, 14, 8, 40), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 9, 20), attack: 'Reconnaissance', severity: 2 },
+            { time: new Date(2024, 8, 12, 14, 10, 5), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 10, 50), attack: 'Worms', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 11, 35), attack: 'Normal Traffic', severity: 1 },
+            { time: new Date(2024, 8, 12, 14, 12, 15), attack: 'Generic', severity: 3 }
+        ];
+
+        // Set chart dimensions
+        const width = 928;
+        const height = 600;
+        const marginTop = 20;
+        const marginRight = 30;
+        const marginBottom = 30;
+        const marginLeft = 40;
+
+        // Create scales
+        const x = d3.scaleTime()
+            .domain(d3.extent(data, d => d.time))
+            .range([marginLeft, width - marginRight]);
+
+        const y = d3.scaleLinear()
+            .domain([0, d3.max(data, d => d.severity)]).nice()
+            .range([height - marginBottom, marginTop]);
+
+        // Create the line generator
+        const line = d3.line()
+            .x(d => x(d.time))
+            .y(d => y(d.severity));
+
+        // Create the SVG container
+        const svg = d3.create("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", [0, 0, width, height])
+            .attr("style", "max-width: 100%; height: auto; height: intrinsic;");
+
+        // Add the line path
+        svg.append("path")
+            .datum(data)
+            .attr("fill", "none")
+            .attr("stroke", "steelblue")
+            .attr("stroke-width", 1.5)
+            .attr("d", line);
+
+        // Add the X-axis
+        svg.append("g")
+            .attr("transform", `translate(0,${height - marginBottom})`)
+            .call(d3.axisBottom(x).ticks(width / 80).tickSizeOuter(0))
+            .call(g => g.select(".domain").remove());
+
+        // Add the Y-axis
+        svg.append("g")
+            .attr("transform", `translate(${marginLeft},0)`)
+            .call(d3.axisLeft(y))
+            .call(g => g.select(".domain").remove())
+            .call(g => g.selectAll(".tick line").clone()
+                .attr("x2", width - marginLeft - marginRight)
+                .attr("stroke-opacity", 0.1))
+            .call(g => g.append("text")
+                .attr("x", -marginLeft)
+                .attr("y", 10)
+                .attr("fill", "currentColor")
+                .attr("text-anchor", "start")
+                .text("↑ Severity"));
+
+        // Add circles at data points
+        svg.selectAll("circle")
+            .data(data)
+            .enter().append("circle")
+            .attr("cx", d => x(d.time))
+            .attr("cy", d => y(d.severity))
+            .attr("r", 4)
+            .attr("fill", "steelblue")
+            .attr("stroke", "white")
+            .attr("stroke-width", 1)
+            .style("cursor", "pointer")
+            .on("mouseover", (event, d) => {
+                tooltip.style("visibility", "visible")
+                    .text(`Attack: ${d.attack}, Severity: ${d.severity}`)
+                    .style("left", `${event.pageX + 5}px`)
+                    .style("top", `${event.pageY - 28}px`);
+            })
+            .on("mousemove", (event) => {
+                tooltip.style("left", `${event.pageX + 5}px`)
+                    .style("top", `${event.pageY - 28}px`);
+            })
+            .on("mouseout", () => {
+                tooltip.style("visibility", "hidden");
+            });
+
+        // Append tooltip to the body
+        const tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("visibility", "hidden");
+
+        // Append the SVG element to the DOM
+        document.getElementById("chart").appendChild(svg.node());
+    </script>
+</body>
+
+</html>

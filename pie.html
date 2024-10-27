@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D3 Pie Chart Example</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+
+<body>
+    <h1>Proportions of attacks by attack type</h1>
+    <div id="chart"></div>
+
+    <script>
+        // Data for attack types with frequencies
+        const data = [
+            { attack: 'Fuzzers', frequency: 0.25 },
+            { attack: 'Analysis', frequency: 0.12 },
+            { attack: 'Backdoors', frequency: 0.08 },
+            { attack: 'DoS', frequency: 0.18 },
+            { attack: 'Exploits', frequency: 0.22 },
+            { attack: 'Generic', frequency: 0.30 },
+            { attack: 'Reconnaissance', frequency: 0.15 },
+            { attack: 'Shellcode', frequency: 0.10 },
+            { attack: 'Worms', frequency: 0.05 }
+        ];
+
+        // Set dimensions
+        const width = 800;
+        const height = Math.min(width, 500);
+        const radius = Math.min(width, height) / 2;
+
+        // Create arc generator
+        const arc = d3.arc()
+            .innerRadius(radius * 0.67)
+            .outerRadius(radius - 1);
+
+        // Create pie generator
+        const pie = d3.pie()
+            .padAngle(1 / radius)
+            .sort(null)
+            .value(d => d.frequency);
+
+        // Create color scale
+        const color = d3.scaleOrdinal()
+            .domain(data.map(d => d.attack))
+            .range(d3.quantize(t => d3.interpolateSpectral(t * 0.8 + 0.1), data.length).reverse());
+
+        // Create SVG container
+        const svg = d3.create("svg")
+            .attr("width", width)
+            .attr("height", height)
+            .attr("viewBox", [-width / 2, -height / 2, width, height])
+            .attr("style", "max-width: 100%; height: auto;");
+
+        // Draw pie chart
+        svg.append("g")
+            .selectAll()
+            .data(pie(data))
+            .join("path")
+            .attr("fill", d => color(d.data.attack))
+            .attr("d", arc)
+            .append("title")
+            .text(d => `${d.data.attack}: ${(d.data.frequency * 100).toFixed(2)}%`);
+
+        // Add labels
+        svg.append("g")
+            .attr("font-family", "sans-serif")
+            .attr("font-size", 12)
+            .attr("text-anchor", "middle")
+            .selectAll()
+            .data(pie(data))
+            .join("text")
+            .attr("transform", d => `translate(${arc.centroid(d)})`)
+            .call(text => text.append("tspan")
+                .attr("y", "-0.4em")
+                .attr("font-weight", "bold")
+                .text(d => d.data.attack))
+            .call(text => text.filter(d => (d.endAngle - d.startAngle) > 0.25).append("tspan")
+                .attr("x", 0)
+                .attr("y", "0.7em")
+                .attr("fill-opacity", 0.7)
+                .text(d => `${(d.data.frequency * 100).toFixed(2)}%`));
+
+        // Append the SVG element to the DOM
+        document.getElementById("chart").appendChild(svg.node());
+    </script>
+</body>
+
+</html>
